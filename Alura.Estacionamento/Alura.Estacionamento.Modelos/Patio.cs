@@ -3,7 +3,6 @@ using Alura.Estacionamento.Modelos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,7 +10,7 @@ namespace Alura.Estacionamento.Modelos
 {
     public class Patio
     {
-       
+
         public Patio()
         {
             Faturado = 0;
@@ -19,8 +18,13 @@ namespace Alura.Estacionamento.Modelos
         }
         private List<Veiculo> veiculos;
         private double faturado;
+
+        private Operador _operadorPatio;
+        public Operador OperadorPatio { get => _operadorPatio; set => _operadorPatio = value; }
+
+
         public double Faturado { get => faturado; set => faturado = value; }
-        public List<Veiculo> Veiculos { get => veiculos; set => veiculos = value; }       
+        public List<Veiculo> Veiculos { get => veiculos; set => veiculos = value; }
         public double TotalFaturado()
         {
             return this.Faturado;
@@ -34,14 +38,15 @@ namespace Alura.Estacionamento.Modelos
 
         public void RegistrarEntradaVeiculo(Veiculo veiculo)
         {
-            veiculo.HoraEntrada = DateTime.Now;            
-            this.Veiculos.Add(veiculo);            
+            veiculo.HoraEntrada = DateTime.Now;
+            veiculo.Ticket = this.GerarTicket(veiculo);
+            this.Veiculos.Add(veiculo);
         }
 
         public string RegistrarSaidaVeiculo(String placa)
         {
             Veiculo procurado = null;
-            string informacao=string.Empty;
+            string informacao = string.Empty;
 
             foreach (Veiculo v in this.Veiculos)
             {
@@ -63,8 +68,8 @@ namespace Alura.Estacionamento.Modelos
                         valorASerCobrado = Math.Ceiling(tempoPermanencia.TotalHours) * 1;
                     }
                     informacao = string.Format(" Hora de entrada: {0: HH: mm: ss}\n " +
-                                             "Hora de saída: {1: HH:mm:ss}\n "      +
-                                             "Permanência: {2: HH:mm:ss} \n "       +
+                                             "Hora de saída: {1: HH:mm:ss}\n " +
+                                             "Permanência: {2: HH:mm:ss} \n " +
                                              "Valor a pagar: {3:c}", v.HoraEntrada, v.HoraSaida, new DateTime().Add(tempoPermanencia), valorASerCobrado);
                     procurado = v;
                     this.Faturado = this.Faturado + valorASerCobrado;
@@ -84,24 +89,46 @@ namespace Alura.Estacionamento.Modelos
             return informacao;
         }
 
-        public Veiculo PesquisaVeiculo(string placa)
+        public Veiculo AlterarDados(Veiculo veiculoAlterado)
         {
-            var encontrado = (
-                from veiculo in this.Veiculos
-                where veiculo.Placa == placa
-                select veiculo).SingleOrDefault();
 
+            var veiculoTemp = (from veiculo in this.Veiculos
+                               where veiculo.Placa == veiculoAlterado.Placa
+                               select veiculo).SingleOrDefault();
+            veiculoTemp.AlterarDadosVeiculo(veiculoAlterado);
+
+            return veiculoTemp;
+        }
+
+        //public Veiculo PesquisaVeiculo(string placa)
+        //{
+        //    var encontrado = (from veiculo in this.Veiculos
+        //                      where veiculo.Placa == placa
+        //                      select veiculo).SingleOrDefault();
+        //    return encontrado;
+        //}
+
+        public Veiculo PesquisaVeiculo(string ticket)
+        {
+            var encontrado = (from veiculo in this.Veiculos
+                              where veiculo.IdTicket == ticket
+                              select veiculo).SingleOrDefault();
             return encontrado;
         }
 
-        public Veiculo AlterarDadosVeiculo(Veiculo veiculoAlterado)
+        private string GerarTicket(Veiculo veiculo)
         {
-            var temp = (
-              from veiculo in this.Veiculos
-              where veiculo.Placa == veiculoAlterado.Placa
-              select veiculo).SingleOrDefault();
-            temp.AlterarDados(veiculoAlterado);
-            return temp;
+            string identificador = new Guid().ToString().Substring(0, 5);
+            veiculo.IdTicket = identificador;
+            string ticket = "###Ticket Estacionamento Alura###" +
+                            $"Identifcador: {identificador}" +
+                            $"Data/Hora de entrada: {DateTime.Now}" +
+                            $"Placa do Veículo:{veiculo.Placa}" +
+                            $"Operador do Estacionamento: {this.OperadorPatio.Nome}";
+
+            return ticket;
         }
+
+
     }
 }
